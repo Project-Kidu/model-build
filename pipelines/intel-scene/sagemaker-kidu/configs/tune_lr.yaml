@@ -1,0 +1,47 @@
+# @package _global_
+
+defaults:
+  - _self_
+  - paths: default.yaml
+  - extras: default.yaml
+  - hydra: default.yaml
+
+trainer:
+  _target_: pytorch_lightning.Trainer
+  default_root_dir: ${paths.output_dir}
+  min_epochs: 5
+  max_epochs: 10
+  accelerator: auto
+  devices: 1
+  check_val_every_n_epoch: 1
+  deterministic: False
+  auto_lr_find: True
+
+data:
+  _target_: src.data.intel_scene_datamodule.IntelSceneDataModule
+  data_dir: ${paths.data_dir}
+  batch_size: 128
+  train_val_test_split: [13_600, 1_700, 1_734]
+  num_workers: 2
+  pin_memory: False
+
+model:
+  _target_: src.models.timm_module.Timm_LitModule
+  optimizer:
+    _target_: torch.optim.Adam
+    _partial_: true
+  scheduler: null
+  net:
+    _target_: timm.models.create_model
+    model_name: resnet18
+    pretrained: true
+    in_chans: 3
+    num_classes: ${model.num_class}
+  num_class: 6
+  learning_rate: 0.001
+
+task_name: "tune"
+
+tags: ["Tune"]
+
+seed: 12345
