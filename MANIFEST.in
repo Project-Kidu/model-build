@@ -1,0 +1,3 @@
+include pipelines/intel-scene/sagemaker-kidu/.project-root
+include pipelines/intel-scene/sagemaker-kidu/configs/*.yaml
+include pipelines/intel-scene/sagemaker-kidu/configs/**/*.yaml
