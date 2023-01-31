@@ -108,7 +108,7 @@ def main(cfg: DictConfig) -> None:
     eval_folder.mkdir(parents=True, exist_ok=True)
 
     subprocess.check_call(
-        "cp -r /opt/ml/processing/code/logs/* /opt/ml/processing/evaluation/",
+        "cp -r /opt/ml/processing/input/code/logs/* /opt/ml/processing/evaluation/",
         shell=True,
     )
 
