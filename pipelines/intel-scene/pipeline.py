@@ -170,6 +170,14 @@ def get_pipeline(
         name="InputDatasetZip",
         default_value="s3://sagemaker-ap-south-1-441249477288/dataset/intel.zip"
     )
+    annotated_meta = ParameterString(
+        name="AnnotationMetaData",
+        default_value="s3://sagemaker-ap-south-1-441249477288/annotations/"
+    )
+    annotated_data = ParameterString(
+        name="AnnotatedData",
+        default_value="s3://sagemaker-ap-south-1-441249477288/Predictions/"
+    )
     
     model_approval_status = ParameterString(
         name="ModelApprovalStatus", default_value="PendingManualApproval"
@@ -211,7 +219,17 @@ def get_pipeline(
                 input_name='data',
                 source=input_dataset,
                 destination='/opt/ml/processing/input'
-            )
+            ),
+            ProcessingInput(
+                input_name='annotated_meta',
+                source=annotated_meta,
+                destination='/opt/ml/processing/input/annotations/meta'
+            ),
+            ProcessingInput(
+                input_name='annotated_data',
+                source=annotated_data,
+                destination='/opt/ml/processing/input/annotations/data'
+            ),
         ],
         outputs=[
             ProcessingOutput(
