@@ -28,6 +28,7 @@ from sagemaker.processing import FrameworkProcessor
 from sagemaker.pytorch.processing import PyTorchProcessor
 
 from sagemaker.pytorch import PyTorchModel
+from sagemaker.model import Model
 from sagemaker.workflow.conditions import ConditionGreaterThanOrEqualTo
 from sagemaker.workflow.condition_step import (
     ConditionStep,
@@ -352,18 +353,25 @@ def get_pipeline(
         )
     )
     
-    model = PyTorchModel(
-        entry_point="pipelines/infer.py",
-        source_dir=os.path.join(BASE_DIR, "sagemaker-kidu"),
-        image_uri = "441249477288.dkr.ecr.ap-south-1.amazonaws.com/sagemaker-inference",
-        sagemaker_session=pipeline_session,
-        role=role,
+    # model = PyTorchModel(
+    #     entry_point="pipelines/infer.py",
+    #     source_dir=os.path.join(BASE_DIR, "sagemaker-kidu"),
+    #     image_uri = "441249477288.dkr.ecr.ap-south-1.amazonaws.com/sagemaker-inference",
+    #     sagemaker_session=pipeline_session,
+    #     role=role,
+    #     model_data=step_train.properties.ModelArtifacts.S3ModelArtifacts,
+    #     framework_version="1.11.0",
+    # )
+    model = Model(
+        image_uri = "441249477288.dkr.ecr.ap-south-1.amazonaws.com/sagemaker-inference:latest",
         model_data=step_train.properties.ModelArtifacts.S3ModelArtifacts,
-        framework_version="1.11.0",
+        role=role,
+        sagemaker_session=pipeline_session,
+        predictor_cls=Predictor
     )
 
     model_step_args = model.register(
-        content_types=["application/x-npy"],
+        content_types=["file-path/raw-bytes"],
         response_types=["application/json"],
         inference_instances=["ml.t2.medium", "ml.t2.large"],
         transform_instances=["ml.m4.xlarge"],
