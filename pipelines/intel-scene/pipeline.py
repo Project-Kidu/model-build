@@ -179,6 +179,7 @@ def get_pipeline(
     batch_size = ParameterString(name="Batch_Size", default_value="128")
     optimizer = ParameterString(name="Optimizer", default_value="torch.optim.Adam")
     learning_rate = ParameterString(name="Learning_Rate", default_value="0.001")
+    use_augmentation_pipeline = ParameterString(name="Augmentation_Pipeline", default_value="1")
     # train_data_s3 = ParameterString(name="Train_Dataset_S3", default_value=step_process.properties.ProcessingOutputConfig.Outputs["train"].S3Output.S3Uri)
     # test_data_s3 = ParameterString(name="Test_Dataset_S3", default_value=step_process.properties.ProcessingOutputConfig.Outputs["test"].S3Output.S3Uri)
 
@@ -261,14 +262,15 @@ def get_pipeline(
         tensorboard_output_config=tensorboard_output_config,
         use_spot_instances=True,
         max_wait=1800,
-        max_run=1500,
+        max_run=5000,
         environment={
             "GIT_USER": "gokul-pv",
             "GIT_EMAIL": "25975535+gokul-pv@users.noreply.github.com",
             "MODEL": model_name,
             "BATCH_SIZE": batch_size,
             "OPTIMIZER": optimizer,
-            "LR": learning_rate
+            "LR": learning_rate,
+            "AUGMENTATION": use_augmentation_pipeline
         }
     )
     
@@ -324,7 +326,11 @@ def get_pipeline(
             ProcessingInput(
                 source=step_process.properties.ProcessingOutputConfig.Outputs["train"].S3Output.S3Uri,
                 destination="/opt/ml/processing/train",
-        ),
+            ),
+            ProcessingInput(
+                source="s3://sagemaker-ap-south-1-441249477288/old-data/prediction/",
+                destination="/opt/ml/processing/prediction",
+            ),
         ],
         outputs=[
             ProcessingOutput(output_name="evaluation", source="/opt/ml/processing/evaluation"),
@@ -416,6 +422,7 @@ def get_pipeline(
             batch_size,
             optimizer,
             learning_rate,
+            use_augmentation_pipeline,
         ],
         steps=[step_process, step_train, step_eval, step_cond],
         sagemaker_session=pipeline_session,

@@ -27,6 +27,7 @@ batch_size = int(os.environ.get("BATCH_SIZE"))
 optimizer = os.environ.get("OPTIMIZER")
 learning_rate = float(os.environ.get("LR"))
 model_name = os.environ.get("MODEL")
+use_augmentation_pipeline = int(os.environ.get("AUGMENTATION"))
 
 ml_root = Path("/opt/ml")
 
@@ -59,11 +60,13 @@ def main(cfg: DictConfig) -> Optional[float]:
     cfg["data"]["num_workers"] = num_cpus
     cfg["data"]["train_data_dir"] = train_channel
     cfg["data"]["test_data_dir"] = test_channel
+    cfg["data"]["use_augmentation_pipeline"] = use_augmentation_pipeline
 
-    cfg["model"]["learning_rate"] = learning_rate
+    cfg["model"]["learning_rate"] = learning_rate / 10.0
     cfg["model"]["net"]["model_name"] = model_name
     cfg["model"]["optimizer"]["_target_"] = optimizer
     cfg["model"]["scheduler"]["steps_per_epoch"] =  math.ceil(cfg["data"]["train_val_test_split"][0] / batch_size)
+    cfg["model"]["scheduler"]["max_lr"] = learning_rate
     
     cfg["callbacks"]["model_checkpoint"]["dirpath"] = sm_model_dir
     cfg["logger"]["tensorboard"]["save_dir"] = ml_root / "output" / "tensorboard" / sm_training_env["job_name"]

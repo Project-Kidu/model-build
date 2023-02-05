@@ -5,3 +5,4 @@ batch_size: 32
 train_val_test_split: [13_600, 1_700, 1_734]
 num_workers: 0
 pin_memory: False
+use_augmentation_pipeline: 1

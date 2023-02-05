@@ -1,12 +1,20 @@
 import json
 import os
+import subprocess
 import tarfile
 from pathlib import Path
+from PIL import Image
 
-import subprocess
 import hydra
 import pyrootutils
 from omegaconf import DictConfig
+import torch
+import torch.nn.functional as F
+from torchvision.transforms import transforms as T
+from captum.attr import IntegratedGradients
+from captum.attr import visualization as viz
+import matplotlib.pyplot as plt
+import numpy as np
 
 pyrootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 
@@ -19,8 +27,66 @@ ml_root = Path("/opt/ml")
 model_artifacts = ml_root / "processing" / "model"
 test_data_dir = ml_root / "processing" / "test"
 train_data_dir = ml_root / "processing" / "train"
+prediction_data_dir = ml_root / "processing" / "prediction"
 batch_size = int(os.environ.get("BATCH_SIZE"))
 model_name = os.environ.get("MODEL")
+
+
+def explain_model(eval_folder):
+    log.info("Running Model explanation")
+    model = torch.jit.load("model.scripted.pt")
+    log.info(f"Loaded Model: {model}")
+
+    categories = [
+        "buildings",
+        "forest",
+        "glacier",
+        "mountain",
+        "sea",
+        "street"
+    ]
+
+    transforms = T.Compose(
+        [
+            T.Resize((224, 224)),
+            T.ToTensor(),
+        ]
+    )
+    transform_normalize = T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+
+    for file in prediction_data_dir.glob("*.*"):
+        log.info(file)
+        image = Image.open(file)
+        transformed_img = transforms(image)
+        image_tensor = transform_normalize(transformed_img)
+        image_tensor = image_tensor.unsqueeze(0)
+
+        output = model(image_tensor)
+        output = F.softmax(output, dim=1)
+        prediction_score, pred_label_idx = torch.topk(output, 1)
+
+        pred_label_idx.squeeze_()
+        predicted_label = categories[pred_label_idx.item()]
+        log.info(
+            f"Predicted: {predicted_label} (confidence = {prediction_score.squeeze().item()}, index = {pred_label_idx.item()})"
+        )
+
+        log.info("Integrated Gradients :")
+        integrated_gradients = IntegratedGradients(model)
+        attributions_ig = integrated_gradients.attribute(image_tensor, target=pred_label_idx, n_steps=200)
+
+        fig, ax = viz.visualize_image_attr(
+                np.transpose(attributions_ig.squeeze().cpu().detach().numpy(), (1, 2, 0)),
+                np.transpose(transformed_img.squeeze().cpu().detach().numpy(), (1, 2, 0)),
+                method="blended_heat_map",
+                cmap="inferno",
+                show_colorbar=True,
+                sign="positive",
+                outlier_perc=1,
+                use_pyplot=False
+            )
+        fig.savefig(f"{eval_folder}/model_explanation_{file.stem}.png")
+        plt.close()
 
 
 @hydra.main(version_base="1.3", config_path="../configs", config_name="eval.yaml")
@@ -106,6 +172,7 @@ def main(cfg: DictConfig) -> None:
 
     eval_folder = ml_root / "processing" / "evaluation"
     eval_folder.mkdir(parents=True, exist_ok=True)
+    explain_model(eval_folder)
 
     subprocess.check_call(
         "cp -r /opt/ml/processing/input/code/logs/* /opt/ml/processing/evaluation/",

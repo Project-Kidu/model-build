@@ -6,6 +6,9 @@ from pytorch_lightning import LightningDataModule
 from torch.utils.data import ConcatDataset, DataLoader, Dataset, random_split
 from torchvision.datasets import ImageFolder
 from torchvision.transforms import transforms
+from pipelines.preprocess import AlbumentationTransforms
+import albumentations as A
+from albumentations.pytorch import ToTensorV2
 
 
 class IntelSceneDataModule(LightningDataModule):
@@ -45,6 +48,7 @@ class IntelSceneDataModule(LightningDataModule):
         batch_size: int = 64,
         num_workers: int = 0,
         pin_memory: bool = False,
+        use_augmentation_pipeline:int = 1
     ):
         super().__init__()
 
@@ -53,13 +57,54 @@ class IntelSceneDataModule(LightningDataModule):
         self.save_hyperparameters(logger=False)
 
         # data transformations
-        self.transforms = transforms.Compose(
-            [
-                transforms.ToTensor(),
-                transforms.Resize((224, 224)),
-                transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-            ]
-        )
+        if use_augmentation_pipeline == 1:
+            self.transforms = AlbumentationTransforms(
+                [
+                    A.Resize(224, 224),
+                    A.RandomRotate90(),
+                    A.Flip(),
+                    A.Transpose(),
+                    A.GaussNoise(p=0.2),
+                    A.OneOf(
+                        [
+                            A.MotionBlur(p=0.2),
+                            A.MedianBlur(blur_limit=3, p=0.1),
+                            A.Blur(blur_limit=3, p=0.1),
+                        ],
+                        p=0.2,
+                    ),
+                    A.ShiftScaleRotate(shift_limit=0.0625, scale_limit=0.2, rotate_limit=45, p=0.2),
+                    A.OneOf(
+                        [
+                            A.OpticalDistortion(p=0.3),
+                            A.GridDistortion(p=0.1),
+                            A.PiecewiseAffine(p=0.3),
+                        ],
+                        p=0.2,
+                    ),
+                    A.OneOf(
+                        [
+                            A.CLAHE(clip_limit=2),
+                            A.Sharpen(),
+                            A.Emboss(),
+                            A.RandomBrightnessContrast(),
+                        ],
+                        p=0.3,
+                    ),
+                    A.HueSaturationValue(p=0.3),
+                    A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+                    ToTensorV2(),
+                    
+                ]
+            )          
+        else:
+            self.transforms = transforms.Compose(
+                [
+                    transforms.ToTensor(),
+                    transforms.Resize((224, 224)),
+                    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+                ]
+            )
 
         self.train_data_dir = Path(train_data_dir) 
         self.test_data_dir = Path(test_data_dir) 
