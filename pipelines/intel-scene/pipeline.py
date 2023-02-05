@@ -27,8 +27,9 @@ from sagemaker.sklearn import SKLearn
 from sagemaker.processing import FrameworkProcessor
 from sagemaker.pytorch.processing import PyTorchProcessor
 
-from sagemaker.pytorch import PyTorchModel
+# from sagemaker.pytorch import PyTorchModel
 from sagemaker.model import Model
+from sagemaker.predictor import Predictor
 from sagemaker.workflow.conditions import ConditionGreaterThanOrEqualTo
 from sagemaker.workflow.condition_step import (
     ConditionStep,
