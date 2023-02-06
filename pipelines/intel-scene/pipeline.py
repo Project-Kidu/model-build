@@ -179,7 +179,7 @@ def get_pipeline(
     model_name = ParameterString(name="Model", default_value="spnasnet_100")
     batch_size = ParameterString(name="Batch_Size", default_value="128")
     optimizer = ParameterString(name="Optimizer", default_value="torch.optim.Adam")
-    learning_rate = ParameterString(name="Learning_Rate", default_value="0.001")
+    learning_rate = ParameterString(name="Learning_Rate", default_value="0.0005")
     use_augmentation_pipeline = ParameterString(name="Augmentation_Pipeline", default_value="1")
     # train_data_s3 = ParameterString(name="Train_Dataset_S3", default_value=step_process.properties.ProcessingOutputConfig.Outputs["train"].S3Output.S3Uri)
     # test_data_s3 = ParameterString(name="Test_Dataset_S3", default_value=step_process.properties.ProcessingOutputConfig.Outputs["test"].S3Output.S3Uri)
@@ -262,7 +262,7 @@ def get_pipeline(
         instance_type="ml.g4dn.xlarge",
         tensorboard_output_config=tensorboard_output_config,
         use_spot_instances=True,
-        max_wait=1800,
+        max_wait=7200,
         max_run=5000,
         environment={
             "GIT_USER": "gokul-pv",

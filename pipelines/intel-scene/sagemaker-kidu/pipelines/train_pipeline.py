@@ -54,7 +54,7 @@ def main(cfg: DictConfig) -> Optional[float]:
 
     cfg["trainer"]["accelerator"] = "auto"
     cfg["trainer"]["min_epochs"] = 5
-    cfg["trainer"]["max_epochs"] = 10
+    cfg["trainer"]["max_epochs"] = 24
 
     cfg["data"]["batch_size"] = batch_size
     cfg["data"]["num_workers"] = num_cpus
